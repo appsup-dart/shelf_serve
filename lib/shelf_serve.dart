@@ -49,7 +49,11 @@ final Map<String, HandlerFactory> handlerFactories = {
   },
   "pub": (Map config) async {
     const _PUB_PORT = 7777;
-    Process p = await Process.start("pub",["serve", "--port", "$_PUB_PORT"]);
+    var workingDir = ".";
+    if (config.containsKey("package")) {
+      workingDir = config["package"]["path"];
+    }
+    Process p = await Process.start("pub",["serve", "--port", "$_PUB_PORT"], workingDirectory: workingDir);
     stdout.addStream(p.stdout);
     stderr.addStream(p.stderr);
     return shelf_proxy.proxyHandler(Uri.parse('http://localhost:$_PUB_PORT'));
