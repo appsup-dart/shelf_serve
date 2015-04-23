@@ -1,0 +1,16 @@
+name: shelf_serve
+description: >
+  This package makes it easy to configure and serve a website and backend with Shelf.
+version: 0.0.1
+author: Rik Bellens <rik.bellens@appsup.be>
+homepage: https://github.com/rbellens/shelf_serve
+dependencies:
+  shelf: any
+  yaml: any
+  args: any
+  shelf_route: any
+  shelf_static: any
+  shelf_rpc: any
+  shelf_proxy: any
+dev_dependencies:
+  unittest: any
