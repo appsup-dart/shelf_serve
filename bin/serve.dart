@@ -1,6 +1,6 @@
 
 import 'package:args/args.dart';
-import 'packages:yaml/yaml.dart';
+import 'package:yaml/yaml.dart';
 import 'dart:io';
 import 'dart:isolate';
 
