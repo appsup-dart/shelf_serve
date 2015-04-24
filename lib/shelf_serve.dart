@@ -20,7 +20,7 @@ import 'package:yaml/yaml.dart';
 import 'package:logging/logging.dart';
 
 typedef shelf.Middleware MiddlewareFactory(Map config);
-typedef shelf.Handler HandlerFactory(Map config);
+typedef shelf.Handler HandlerFactory(String path, Map config);
 
 final Map<String, MiddlewareFactory> middlewareFactories = {
   "log_requests": (_) => shelf.logRequests()
@@ -29,9 +29,8 @@ final Map<String, MiddlewareFactory> middlewareFactories = {
 int _PUB_PORT = 7777;
 
 final Map<String, HandlerFactory> handlerFactories = {
-  "api": (Map config) {
-    const _API_PREFIX = '/api';
-    final rpc.ApiServer _apiServer = new rpc.ApiServer(apiPrefix: _API_PREFIX, prettyPrint: true);
+  "api": (String path, Map config) {
+    final rpc.ApiServer _apiServer = new rpc.ApiServer(apiPrefix: path, prettyPrint: true);
     for (var lib in currentMirrorSystem().libraries.values) {
       if (lib.simpleName==const Symbol("discovery.api")) continue;
       for (var c in lib.declarations.values.where((d)=>d is ClassMirror)) {
@@ -44,12 +43,12 @@ final Map<String, HandlerFactory> handlerFactories = {
     _apiServer.enableDiscoveryApi();
     return shelf_rpc.createRpcHandler(_apiServer);
   },
-  "static": (Map config) {
+  "static": (String path, Map config) {
     return shelf_static.createStaticHandler("web",
                                               defaultDocument: "index.html",
                                               serveFilesOutsidePath: true);
   },
-  "pub": (Map config) async {
+  "pub": (String path, Map config) async {
     var port = _PUB_PORT+=10;
     print("trying to serve ${config["package"]} on $port");
     var workingDir = ".";
@@ -69,7 +68,7 @@ final Map<String, HandlerFactory> handlerFactories = {
 };
 
 createMiddleware(Map config) => middlewareFactories[config["type"]](config);
-createHandler(Map config) => handlerFactories[config["type"]](config);
+createHandler(String path, Map config) => handlerFactories[config["type"]](path, config);
 
 run(List<String> args, [dynamic config]) async {
   Logger.root.onRecord.listen(print);
@@ -105,7 +104,7 @@ run(List<String> args, [dynamic config]) async {
     var v = c[path];
     if (v is String) v = {"type": v};
     print("adding handler ${v["type"]} on path $path");
-    router.add(path, null, await createHandler(v), exactMatch: false);
+    router.add(path, null, await createHandler(path, v), exactMatch: false);
 
   }
 
