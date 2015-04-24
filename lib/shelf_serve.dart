@@ -26,6 +26,8 @@ final Map<String, MiddlewareFactory> middlewareFactories = {
   "log_requests": (_) => shelf.logRequests()
 };
 
+int _PUB_PORT = 7777;
+
 final Map<String, HandlerFactory> handlerFactories = {
   "api": (Map config) {
     const _API_PREFIX = '/api';
@@ -48,7 +50,8 @@ final Map<String, HandlerFactory> handlerFactories = {
                                               serveFilesOutsidePath: true);
   },
   "pub": (Map config) async {
-    const _PUB_PORT = 7777;
+    var port = _PUB_PORT+=10;
+    print("trying to serve ${config["package"]} on $port");
     var workingDir = ".";
     if (config.containsKey("package")) {
       if (config["package"] is String) {
@@ -58,10 +61,10 @@ final Map<String, HandlerFactory> handlerFactories = {
         workingDir = config["package"]["path"];
       }
     }
-    Process p = await Process.start("pub",["serve", "--port", "$_PUB_PORT"], workingDirectory: workingDir);
-    stdout.addStream(p.stdout);
-    stderr.addStream(p.stderr);
-    return shelf_proxy.proxyHandler(Uri.parse('http://localhost:$_PUB_PORT'));
+    Process p = await Process.start("pub",["serve", "--port", "$port"], workingDirectory: workingDir);
+    p.stdout.listen((v)=>stdout.add(v));
+    p.stderr.listen((v)=>stderr.add(v));
+    return shelf_proxy.proxyHandler(Uri.parse('http://localhost:$port'));
   }
 };
 
