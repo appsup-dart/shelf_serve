@@ -51,7 +51,12 @@ final Map<String, HandlerFactory> handlerFactories = {
     const _PUB_PORT = 7777;
     var workingDir = ".";
     if (config.containsKey("package")) {
-      workingDir = config["package"]["path"];
+      if (config["package"] is String) {
+        var link = new Link("packages${Platform.pathSeparator}${config["package"]}");
+        workingDir = new Directory(link.targetSync()).parent.path;
+      } else {
+        workingDir = config["package"]["path"];
+      }
     }
     Process p = await Process.start("pub",["serve", "--port", "$_PUB_PORT"], workingDirectory: workingDir);
     stdout.addStream(p.stdout);
