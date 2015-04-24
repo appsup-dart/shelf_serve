@@ -40,7 +40,7 @@ final Map<String, HandlerFactory> handlerFactories = {
         }
       }
     }
-    _apiServer.enableDiscoveryApi();
+    if (config["enable_discovery_api"]!=false) _apiServer.enableDiscoveryApi();
     return shelf_rpc.createRpcHandler(_apiServer);
   },
   "static": (String path, Map config) {
