@@ -8,69 +8,26 @@ library shelf_serve;
 
 import 'package:args/args.dart';
 import 'dart:io';
-import 'dart:mirrors';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf_route/shelf_route.dart' as shelf_route;
 import 'package:shelf/shelf_io.dart' as shelf_io;
-import 'package:shelf_static/shelf_static.dart' as shelf_static;
-import 'package:shelf_rpc/shelf_rpc.dart' as shelf_rpc;
-import 'package:shelf_proxy/shelf_proxy.dart' as shelf_proxy;
-import 'package:rpc/rpc.dart' as rpc;
 import 'package:yaml/yaml.dart';
 import 'package:logging/logging.dart';
+import 'package:initialize/initialize.dart' as initialize;
 
-typedef shelf.Middleware MiddlewareFactory(Map config);
-typedef shelf.Handler HandlerFactory(String path, Map config);
+import 'src/annotations.dart';
+import 'src/middlewares.dart';
+import 'src/handlers.dart';
 
-final Map<String, MiddlewareFactory> middlewareFactories = {
-  "log_requests": (_) => shelf.logRequests()
-};
+final Map<String, MiddlewareFactory> middlewareFactories = {};
 
-int _PUB_PORT = 7777;
-
-final Map<String, HandlerFactory> handlerFactories = {
-  "api": (String path, Map config) {
-    final rpc.ApiServer _apiServer = new rpc.ApiServer(apiPrefix: path, prettyPrint: true);
-    for (var lib in currentMirrorSystem().libraries.values) {
-      if (lib.simpleName==const Symbol("discovery.api")) continue;
-      for (var c in lib.declarations.values.where((d)=>d is ClassMirror)) {
-        if (c.metadata.any((m)=>m.reflectee is rpc.ApiClass)) {
-          var s = _apiServer.addApi((c as ClassMirror).newInstance(const Symbol(""),[]).reflectee);
-          print("  adding $s");
-        }
-      }
-    }
-    if (config["enable_discovery_api"]!=false) _apiServer.enableDiscoveryApi();
-    return shelf_rpc.createRpcHandler(_apiServer);
-  },
-  "static": (String path, Map config) {
-    return shelf_static.createStaticHandler("web",
-                                              defaultDocument: "index.html",
-                                              serveFilesOutsidePath: true);
-  },
-  "pub": (String path, Map config) async {
-    var port = _PUB_PORT+=10;
-    print("trying to serve ${config["package"]} on $port");
-    var workingDir = ".";
-    if (config.containsKey("package")) {
-      if (config["package"] is String) {
-        var link = new Link("packages${Platform.pathSeparator}${config["package"]}");
-        workingDir = new Directory(link.targetSync()).parent.path;
-      } else {
-        workingDir = config["package"]["path"];
-      }
-    }
-    Process p = await Process.start("pub",["serve", "--port", "$port"], workingDirectory: workingDir);
-    p.stdout.listen((v)=>stdout.add(v));
-    p.stderr.listen((v)=>stderr.add(v));
-    return shelf_proxy.proxyHandler(Uri.parse('http://localhost:$port'));
-  }
-};
+final Map<String, HandlerFactory> handlerFactories = {};
 
 createMiddleware(Map config) => middlewareFactories[config["type"]](config);
 createHandler(String path, Map config) => handlerFactories[config["type"]](path, config);
 
 run(List<String> args, [dynamic config]) async {
+  await initialize.run();
   Logger.root.onRecord.listen(print);
 
   if (config==null) config = loadConfig("shelf_serve.yaml");
@@ -90,8 +47,16 @@ run(List<String> args, [dynamic config]) async {
   var pipeline = const shelf.Pipeline();
   for (var c in config["middleware"]) {
     if (c is String) c = {"type": c};
+    else if (c.keys.length!=1) {
+      stdout.writeln('Expected single key in handlers');
+      exit(1);
+    } else {
+      var key = c.keys.single;
+      c = new Map.from(c[key])..["type"] = key;
+    }
+    print(c);
     print("adding middleware ${c["type"]}");
-    pipeline = pipeline.addMiddleware(createMiddleware(c));
+    pipeline = pipeline.addMiddleware(await createMiddleware(c));
   }
 
   var router = shelf_route.router();
