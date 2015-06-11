@@ -1,115 +1,59 @@
 
-import 'package:args/args.dart';
-import 'package:yaml/yaml.dart';
+import 'package:shelf_serve/shelf_serve.dart';
 import 'dart:io';
-import 'dart:isolate';
+import 'package:yamlicious/yamlicious.dart';
 
 main(List<String> args) async {
-  var parser = new ArgParser()
-    ..addOption('config', abbr: 'c', defaultsTo: 'shelf_serve.yaml')
-    ..addOption('out', abbr: 'o', defaultsTo: 'bin/server.dart')
-    ..addOption('port', abbr: 'p', defaultsTo: '8080')
-    ..addFlag("serve", defaultsTo: true);
 
-  var result = parser.parse(args);
+  var config = new ShelfServeConfig.fromCommandLineArguments(args);
 
-  var y = loadYaml(new File(result["config"]).readAsStringSync());
+  Directory dir = new Directory("${config.homeDir}/.shelf_serve").createTempSync();
+  dir.createSync(recursive: true);
 
-  var dependencies = {};
+  var name = dir.path.split("/").last;
 
-  var middlewares = [];
-  for (var name in y["middleware"]) {
-    switch (name) {
-      case "log_requests":
-        middlewares.add("shelf.logRequests()");
+  var pubspec = {
+    "name": name,
+    "dependencies": config.dependencies,
+    "dependency_overrides": {
+      "quiver": "^0.21.3"
     }
+  };
+
+  new File("${dir.path}/pubspec.yaml").writeAsStringSync(toYamlString(pubspec));
+
+  var server = """
+
+import 'package:shelf_serve/shelf_serve.dart' as shelf_serve;
+${config.imports.map((i)=>"import 'package:$i';").join("\n")}
+
+
+main(List<String> args) => shelf_serve.run(args);
+""";
+
+  new Directory("${dir.path}/bin").createSync();
+
+  new File("${dir.path}/bin/server.dart").writeAsStringSync(server);
+
+  new File("${dir.path}/shelf_serve.yaml").writeAsStringSync(toYamlString(config.config));
+
+  print("server package wirtten to $dir");
+  print("getting pub dependencies");
+  var r = Process.runSync("pub",["get"], workingDirectory: dir.path);
+
+  print(dir);
+  stdout.writeln(r.stdout);
+  stderr.writeln(r.stderr);
+  if (r.exitCode!=0) {
+    exit(r.exitCode);
   }
 
-  print(y);
-  var handlers = [];
-  for (var h in y["handlers"]) {
-    if (h.keys.length!=1) {
-      stdout.writeln('Expected single key in handlers');
-      exit(1);
-    }
-    var path = h.keys.single;
-    var v = h[path];
-    var type;
-    var config = {};
-    if (v is String) {
-      type = v;
-    } else if (v is Map) {
-      type = v["type"];
-      config = v;//..remove("type");
-    }
-    switch (type) {
-      case "api":
-        break;
-      case "static":
-        break;
-    }
-    handlers.add({
-      "path": path,
-      "handler": null
-                 });
-  }
+  print("starting server");
+  Process p = await Process.start("dart",["bin/server.dart"], workingDirectory: dir.path);
 
-  var code = """
-import 'package:args/args.dart';
-import 'dart:io';
-import 'package:shelf/shelf.dart' as shelf;
-import 'package:shelf_route/shelf_route.dart' as shelf_route;
-import 'package:shelf/shelf_io.dart' as shelf_io;
-
-
-main(List<String> args) async {
-  var parser = new ArgParser()
-      ..addOption('port', abbr: 'p', defaultsTo: '8080');
-
-  var result = parser.parse(args);
-
-  var port = int.parse(result['port'], onError: (val) {
-    stdout.writeln('Could not parse port value "\$val" into a number.');
-    exit(1);
-  });
-
-  var router = shelf_route.router();
-
-  var handler = const shelf.Pipeline()
-  ${middlewares.map((m)=>".addMiddleware($m)").join("\n")}
-  .addHandler(router.handler);
-
-  HttpServer server = await shelf_io.serve(handler, '0.0.0.0', port);
-  print('Serving on http://\${server.address.host}:\${server.port}');
+  p.stdout.listen((d)=>stdout.add(d));
+  p.stderr.listen((d)=>stderr.add(d));
 
 
 
-}
-
-  """;
-
-  new File(result["out"]).writeAsStringSync(code);
-
-  if (result["serve"]) {
-    SendPort sendPort;
-
-    ReceivePort receivePort = new ReceivePort();
-    receivePort.listen((msg) {
-      if (sendPort == null) {
-        sendPort = msg;
-      } else {
-        print('Received from isolate: $msg\n');
-      }
-    });
-    Isolate.spawnUri(new Uri.file("server.dart"), [], receivePort.sendPort).then((isolate) {
-      print('isolate spawned');
-
-    });
-
-/*
-    Process p = await Process.start("pub",["run","server"]);
-    stdout.addStream(p.stdout);
-    stderr.addStream(p.stderr);
-*/
-  }
 }

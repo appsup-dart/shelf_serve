@@ -1,0 +1,15 @@
+
+handlers:
+  /:
+    type: static
+    path: ../test_static
+  /web:
+    type: pub
+    package:
+      path: ../test_web
+#  /api:
+#    type: api
+
+dependencies:
+  shelf_serve:
+    path: ../../

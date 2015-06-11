@@ -30,7 +30,7 @@ Future<shelf.Handler> createApiHandler(String path, Map config) async {
 
 @ShelfHandler(name: "static")
 Future<shelf.Handler> createStaticHandler(String path, Map config) async {
-  return shelf_static.createStaticHandler("web",
+  return shelf_static.createStaticHandler(config["path"],
   defaultDocument: "index.html",
   serveFilesOutsidePath: true);
 }
