@@ -7,7 +7,7 @@ main(List<String> args) async {
 
   var config = new ShelfServeConfig.fromCommandLineArguments(args);
 
-  Directory dir = new Directory("${config.homeDir}/.shelf_serve").createTempSync();
+  Directory dir = new Directory(config.outDir);
   dir.createSync(recursive: true);
 
   var name = dir.path.split("/").last;
@@ -35,7 +35,24 @@ main(List<String> args) => shelf_serve.run(args);
 
   new File("${dir.path}/bin/server.dart").writeAsStringSync(server);
 
+  var dockerFile = """
+FROM google/dart-runtime-base
+
+WORKDIR /project/app
+
+#ADD app.yaml /project/
+ADD . /project/app/
+
+RUN pub get
+
+
+#RUN pub get --offline
+""";
+  new File("${dir.path}/Dockerfile").writeAsStringSync(dockerFile);
+
   new File("${dir.path}/shelf_serve.yaml").writeAsStringSync(toYamlString(config.config));
+
+  config.copyExt();
 
   print("server package wirtten to $dir");
   print("getting pub dependencies");
@@ -48,11 +65,15 @@ main(List<String> args) => shelf_serve.run(args);
     exit(r.exitCode);
   }
 
-  print("starting server");
-  Process p = await Process.start("dart",["bin/server.dart"], workingDirectory: dir.path);
 
-  p.stdout.listen((d)=>stdout.add(d));
-  p.stderr.listen((d)=>stderr.add(d));
+  if (config.command=="serve") {
+    print("starting server");
+    Process p = await Process.start("dart",["bin/server.dart"], workingDirectory: dir.path);
+
+    p.stdout.listen((d)=>stdout.add(d));
+    p.stderr.listen((d)=>stderr.add(d));
+
+  }
 
 
 

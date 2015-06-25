@@ -1,12 +1,12 @@
 
 handlers:
-  /:
-    type: static
-    path: ../test_static
   /web:
     type: pub
     package:
       path: ../test_web
+  /static:
+    type: static
+    path: ../test_static
 #  /api:
 #    type: api
 

@@ -62,7 +62,7 @@ Future<shelf.Handler> createProxyHandler(String path, Map config) async {
   if (config.containsKey("process")) {
     var process = config["process"];
     Process p = await Process.start(process["executable"], process["arguments"],
-                          workingDirectory: process["workingDirectory"],
+                          workingDirectory: process["workingDirectory"]["path"],
                           environment: process["environment"]);
     p.stdout.listen((v) => stdout.add(v));
     p.stderr.listen((v) => stderr.add(v));
