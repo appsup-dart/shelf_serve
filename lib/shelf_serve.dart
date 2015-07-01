@@ -223,7 +223,7 @@ createServerHandler(List<String> args, [dynamic config]) async {
   if (config==null) config = loadConfig("shelf_serve.yaml");
   if (config is String) config = loadConfig(config);
 
-  var vars = config.containsKey("vars") ? config["vars"] : {};
+  var vars = config["vars"]!=null ? config["vars"] : {};
   for(var v in vars.keys) {
     List parts = v.split(".");
     var libName = parts.sublist(0,parts.length-1).join(".");
