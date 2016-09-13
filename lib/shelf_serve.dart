@@ -76,7 +76,7 @@ serve(String pathToConfigFile, {int port: 8080, String logLevel: 'INFO'}) {
   });
 }
 
-const _currentVersion = "0.1.2";
+const _currentVersion = "0.1.3";
 
 /// Starts a [HttpServer] at port [port] based on the configurations read from
 /// the file at [pathToConfigFile].
