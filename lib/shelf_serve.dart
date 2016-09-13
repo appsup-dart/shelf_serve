@@ -60,7 +60,8 @@ Future<shelf.Handler> createHandler(String type, String route, Map config) async
 ///
 /// Note: This will not handle dependencies defined in the config file. A script
 /// that uses this function should import all the necessary dependencies.
-serve(String pathToConfigFile, {int port: 8080}) {
+serve(String pathToConfigFile, {int port: 8080, String logLevel: 'INFO'}) {
+  Logger.root.level = Level.LEVELS.firstWhere((l)=>l.name==logLevel, orElse: ()=>Level.INFO);
   Logger.root.onRecord.listen(print);
   var workingDir = path.dirname(pathToConfigFile);
   var config = _loadConfig(pathToConfigFile);
@@ -75,7 +76,7 @@ serve(String pathToConfigFile, {int port: 8080}) {
   });
 }
 
-const _currentVersion = "0.1.0";
+const _currentVersion = "0.1.2";
 
 /// Starts a [HttpServer] at port [port] based on the configurations read from
 /// the file at [pathToConfigFile].
@@ -85,7 +86,10 @@ const _currentVersion = "0.1.0";
 ///
 /// When not using the shelf_serve package from the pub repository, the path to
 /// the shelf_serve package should be specified.
-Future serveInIsolate(String pathToConfigFile, {int port: 8080, String pathToShelfServe}) async {
+Future serveInIsolate(String pathToConfigFile, {int port: 8080, String pathToShelfServe, String logLevel: 'INFO'}) async {
+  Logger.root.level = Level.LEVELS.firstWhere((l)=>l.name==logLevel, orElse: ()=>Level.INFO);
+  Logger.root.onRecord.listen(print);
+
   var config = _loadConfig(pathToConfigFile);
 
   var workingDir = path.dirname(pathToConfigFile);
@@ -106,7 +110,7 @@ import 'package:shelf_serve/shelf_serve.dart' as serve;
 ${config["dependencies"].keys.map((k)=>"import 'package:$k/$k.dart';").join("\n")}
 
 main() {
-  serve.serve("$pathToConfigFile", port: $port);
+  serve.serve("$pathToConfigFile", port: $port, logLevel: '$logLevel');
 }
 
     """), [], null,
@@ -140,10 +144,14 @@ _writePubspec(String dir, Map<String,dynamic> dependencies, String workingDir) {
         dependencies.values.map((d)=>(d is Map&&d.containsKey("path") ?
         (new Map.from(d)..["path"] = resolve(d["path"])) : d)))
   });
+  _logger.fine("Creating package for dependencies at $dir");
+  _logger.finest(str);
   new Directory(dir).createSync(recursive: true);
   new File("$dir/pubspec.yaml").writeAsStringSync(str);
   var r = Process.runSync("pub",["get"], workingDirectory: dir);
   if (r.exitCode!=0) {
+    _logger.finer("pub get failed");
+    _logger.finer(r.stderr);
     r = Process.runSync("pub",["upgrade"], workingDirectory: dir);
     if (r.exitCode!=0) {
       _logger.shout("Unable to get dependencies");
