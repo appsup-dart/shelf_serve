@@ -22,6 +22,6 @@ class Server {
 
   @SubCommand(help: 'Start the server')
   serve({@Option(help: 'The port the server should listen on.') int port: 8080})
-  => serveInIsolate(configPath, port: port, pathToShelfServe: pathToShelfServe);
+  => serveInIsolate(configPath, port: port, pathToShelfServe: pathToShelfServe, logLevel: logLevel);
 
 }
