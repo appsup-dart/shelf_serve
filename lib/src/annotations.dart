@@ -1,39 +1,34 @@
 
-library shelf_serve.annotations;
-
-import 'package:initialize/initialize.dart';
-import '../shelf_serve.dart';
-import 'dart:async';
-import 'package:shelf/shelf.dart' as shelf;
-
-typedef Future<shelf.Middleware> MiddlewareFactory(Map config);
-typedef Future<shelf.Handler> HandlerFactory(String path, Map config);
+part of shelf_serve;
 
 
-class ShelfHandler implements Initializer<HandlerFactory> {
+/// An annotation class that registers a [HandlerFactory] with the name [name].
+class ShelfHandler implements initialize.Initializer<HandlerFactory> {
 
+  /// The name of the factory.
   final String name;
 
-  const ShelfHandler({this.name});
+  const ShelfHandler(this.name);
 
   initialize(HandlerFactory f) {
-    print("init handler $name");
-    if (handlerFactories.containsKey(name))
+    if (_handlerFactories.containsKey(name))
       throw new StateError("Shelf handler '$name' already registered");
-    handlerFactories[name] = f;
+    _handlerFactories[name] = f;
   }
 }
 
-class ShelfMiddleware implements Initializer<MiddlewareFactory> {
+/// An annotation class that registers a [MiddlewareFactory] with the name
+/// [name].
+class ShelfMiddleware implements initialize.Initializer<MiddlewareFactory> {
 
+  /// The name of the factory.
   final String name;
 
-  const ShelfMiddleware({this.name});
+  const ShelfMiddleware(this.name);
 
   initialize(MiddlewareFactory f) {
-    print("init middleware $name");
-    if (handlerFactories.containsKey(name))
+    if (_handlerFactories.containsKey(name))
       throw new StateError("Shelf middleware '$name' already registered");
-    middlewareFactories[name] = f;
+    _middlewareFactories[name] = f;
   }
 }

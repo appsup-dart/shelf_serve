@@ -1,15 +1,28 @@
 
 handlers:
-  /web:
-    type: pub
-    package:
-      path: ../test_web
-  /static:
-    type: static
-    path: ../test_static
-#  /api:
-#    type: api
+  /html:
+    type: compound
+    handlers:
+      /web:
+        type: pub
+        package:
+          path: test_web
+      /static:
+        type: static
+        path: test_static
+  /source:
+    type: proxy
+    url: https://github.com/appsup-dart/shelf_serve
+  /api:
+    type: rpc
+  /echo:
+    type: echo
+
+middlewares:
+  log_requests:
 
 dependencies:
-  shelf_serve:
-    path: ../../
+  test_api:
+    path: test_api
+  test_echo:
+    path: test_echo

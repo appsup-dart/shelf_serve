@@ -1,0 +1,3 @@
+name: test_api
+dependencies:
+  rpc: any

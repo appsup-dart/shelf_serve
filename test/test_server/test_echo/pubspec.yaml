@@ -1,0 +1,5 @@
+name: test_echo
+
+dependencies:
+  shelf_serve:
+    path: ../../../
