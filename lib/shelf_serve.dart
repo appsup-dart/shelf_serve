@@ -102,7 +102,9 @@ Future serveInIsolate(String pathToConfigFile, {int port: 8080, String pathToShe
     {"git": pathToShelfServe} :
     {"path": path.absolute(pathToShelfServe)}
   }..addAll(config["dependencies"] ?? const{});
-  await _writePubspec(packageDir,dependencies, workingDir);
+
+  await _writePubspec(packageDir,dependencies, workingDir,
+      config["dependency_overrides"] ?? const{});
 
   var isolate = await Isolate.spawnUri(new Uri.dataFromString("""
 
@@ -132,17 +134,21 @@ final Map<String, HandlerFactory> _handlerFactories = {};
 
 final Logger _logger = new Logger("shelf_serve");
 
-_writePubspec(String dir, Map<String,dynamic> dependencies, String workingDir) {
+_writePubspec(String dir, Map<String,dynamic> dependencies, String workingDir, Map<String,dynamic> dependencyOverrides) {
   resolve(dir) {
     return path.absolute(workingDir==null ? dir : path.join(workingDir,dir));
   }
 
+  Map<String,dynamic> _mapDependencies(Map<String,dynamic> dependencies) =>
+      new Map.fromIterables(
+          dependencies.keys,
+          dependencies.values.map((d)=>(d is Map&&d.containsKey("path") ?
+          (new Map.from(d)..["path"] = resolve(d["path"])) : d)));
+
   var str = toYamlString({
     "name": path.basename(dir),
-    "dependencies": new Map.fromIterables(
-        dependencies.keys,
-        dependencies.values.map((d)=>(d is Map&&d.containsKey("path") ?
-        (new Map.from(d)..["path"] = resolve(d["path"])) : d)))
+    "dependencies": _mapDependencies(dependencies),
+    "dependency_overrides": _mapDependencies(dependencyOverrides)
   });
   _logger.fine("Creating package for dependencies at $dir");
   _logger.finest(str);
