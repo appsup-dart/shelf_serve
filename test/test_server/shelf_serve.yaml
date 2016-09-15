@@ -6,10 +6,10 @@ handlers:
       /web:
         type: pub
         package:
-          path: test_web
+          resource: test_web
       /static:
         type: static
-        path: test_static
+        resource: test_static
   /source:
     type: proxy
     url: https://github.com/appsup-dart/shelf_serve
@@ -26,3 +26,7 @@ dependencies:
     path: test_api
   test_echo:
     path: test_echo
+
+resources:
+  test_static: test_static
+  test_web: test_web

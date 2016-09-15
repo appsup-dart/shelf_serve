@@ -23,7 +23,7 @@ Future<shelf.Handler> createRpcHandler(String type, String route, Map config) as
     if (lib.simpleName == const Symbol("discovery.api")) continue;
     for (var c in lib.declarations.values.where((d) => d is ClassMirror)) {
       if (c.metadata.any((m) => m.reflectee is rpc.ApiClass)) {
-        var s = _apiServer.addApi((c as ClassMirror).newInstance(const Symbol(""), []).reflectee);
+        _apiServer.addApi((c as ClassMirror).newInstance(const Symbol(""), []).reflectee);
       }
     }
   }
@@ -33,9 +33,8 @@ Future<shelf.Handler> createRpcHandler(String type, String route, Map config) as
 
 @ShelfHandler("static")
 Future<shelf.Handler> createStaticHandler(String type, String route, Map config) async {
-  var wd = Zone.current["workingDirectory"];
   return shelf_static.createStaticHandler(
-      wd==null ? config["path"] : path.join(wd, config["path"]),
+      context.resolveDependency(config),
       defaultDocument: "index.html",
       serveFilesOutsidePath: true);
 }
@@ -46,13 +45,13 @@ int _PUB_PORT = 7777;
 @ShelfHandler("pub")
 Future<shelf.Handler> createPubHandler(String type, String route, Map config) async {
   var port = _PUB_PORT += 10;
-  var workingDir = Zone.current["workingDirectory"] ?? ".";
+  var workingDir;
   if (config.containsKey("package")) {
     if (config["package"] is String) {
-      var link = new Link("$workingDir/packages${Platform.pathSeparator}${config["package"]}");
+      var link = new Link("${context.homeDirectory.path}/packages${Platform.pathSeparator}${config["package"]}");
       workingDir = new Directory(link.targetSync()).parent.path;
     } else {
-      workingDir = path.join(workingDir, config["package"]["path"]);
+      workingDir = context.resolveDependency(config["package"]);
     }
   }
 

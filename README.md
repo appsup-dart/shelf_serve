@@ -130,4 +130,36 @@ serve('path/to/shelf_serve.yaml', port: 5000);
 Alternatively, you can run the method `serveInIsolate`, which will automatically do all the necessary imports based on
 the dependencies section in the `shelf_serve.yaml` file.
 
+## Creating a docker file
 
+
+First install the `shelf_serve` executable:
+
+```sh
+pub global activate shelf_serve
+```
+
+Then goto the directory where the `shelf_serve.yaml` file is located and run:
+
+```sh
+shelf_serve create-docker-project
+```
+
+By default the project will be created in `build/project`. To select another output directory run:
+
+```sh
+shelf_serve create-docker-project --output-directory some/other/path
+```
+
+Next, go to the built project directory. There will be a `Dockerfile` there. 
+You can create a container image by running:
+
+```sh
+docker build -t my/app .
+```
+
+And to run this image:
+
+```sh
+docker run -d -p 8080:8080 my/app
+```
