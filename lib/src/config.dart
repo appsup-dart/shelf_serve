@@ -13,7 +13,7 @@ import 'dart:async';
 import 'dart:isolate';
 import '../shelf_serve.dart';
 
-const _currentVersion = "0.2.1";
+const _currentVersion = "0.2.3";
 
 final Logger _logger = new Logger("shelf_serve");
 
