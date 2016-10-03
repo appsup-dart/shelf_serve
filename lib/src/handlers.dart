@@ -33,10 +33,21 @@ Future<shelf.Handler> createRpcHandler(String type, String route, Map config) as
 
 @ShelfHandler("static")
 Future<shelf.Handler> createStaticHandler(String type, String route, Map config) async {
-  return shelf_static.createStaticHandler(
+  var handler = shelf_static.createStaticHandler(
       context.resolveDependency(config),
       defaultDocument: "index.html",
       serveFilesOutsidePath: true);
+
+  return (shelf.Request request) {
+    if (request.headers.containsKey("if-modified-since")) {
+      var d = request.headers["if-modified-since"];
+      d = d.replaceAll("UTC","GMT");
+      request = request.change(
+          headers: new Map.from(request.headers)..["if-modified-since"] = d
+      );
+    }
+    return handler(request);
+  };
 }
 
 
