@@ -13,7 +13,7 @@ import 'dart:async';
 import 'dart:isolate';
 import '../shelf_serve.dart';
 
-const _currentVersion = "0.2.0";
+const _currentVersion = "0.2.1";
 
 final Logger _logger = new Logger("shelf_serve");
 
@@ -288,7 +288,7 @@ main(List<String> args) => serve.main(args);
         updates[k] = new PathReference(path.join(path.basename(dest.path), k));
         if (copy) {
           _copy(new Directory(path.join(homeDirectory.path,dep.path)),
-              new Directory(path.join(dest.path,path.basename(dep.path))));
+              new Directory(path.join(dest.path,k)));
         } else {
           _link(new Directory(path.join(homeDirectory.path,dep.path)), dest);
         }
