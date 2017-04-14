@@ -14,6 +14,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as path;
+import 'package:mime/mime.dart' as mime;
+import 'package:shelf_static/src/util.dart';
+import 'package:http_parser/http_parser.dart';
 
 
 @ShelfHandler("rpc")
@@ -110,4 +113,34 @@ Future<shelf.Handler> createCompoundHandler(String type, String route,
   var handler = pipeline.addHandler(router.handler);
 
   return handler;
+}
+
+
+@ShelfHandler("file")
+Future<shelf.Handler> createFileHandler(String type, String route, Map config) async {
+  return (shelf.Request request) async {
+    var file = new File(context.resolveDependency(config)+Platform.pathSeparator+config["fileName"]);
+    var fileStat = file.statSync();
+    var ifModifiedSince = request.ifModifiedSince;
+
+    if (ifModifiedSince != null) {
+      var fileChangeAtSecResolution = toSecondResolution(fileStat.changed);
+      if (!fileChangeAtSecResolution.isAfter(ifModifiedSince)) {
+        return new shelf.Response.notModified();
+      }
+    }
+
+    var headers = <String, String>{
+      HttpHeaders.CONTENT_LENGTH: fileStat.size.toString(),
+      HttpHeaders.LAST_MODIFIED: formatHttpDate(fileStat.changed)
+    };
+
+    String contentType = mime.lookupMimeType(file.path);
+
+    if (contentType != null) {
+      headers[HttpHeaders.CONTENT_TYPE] = contentType;
+    }
+
+    return new shelf.Response.ok(file.openRead(), headers: headers);
+  };
 }
