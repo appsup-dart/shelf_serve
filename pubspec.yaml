@@ -1,7 +1,7 @@
 name: shelf_serve
 description: >
   This package makes it easy to configure and serve a website and backend with Shelf.
-version: 0.2.4
+version: 0.2.5
 author: Rik Bellens <rik.bellens@appsup.be>
 homepage: https://github.com/appsup-dart/shelf_serve
 dependencies:
